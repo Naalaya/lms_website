@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Roles {
+  Admin
+  Teacher
+  Student
+}
+
+enum Gender {
+  Male
+  Female
+}
+
+
+model User {
+  // Account
+  user_id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  create_at         DateTime @default(now())
+
+  // Information
+  user_email        String   @unique
+  phone_number      String?
+  personal_id       String   @unique // CCCD, CMT, Passport
+  userName          String   @unique
+  date_of_birth     DateTime
+  gender            Gender
+  image_url        String
+  // Role
+  role              Roles    @unique
+  Student           Student?
+  Teacher           Teacher?
+  Admin             Admin?
+}
+
+model Student {
+  student_id   String              @id @default(auto()) @map("_id") @db.ObjectId
+  user         User                @relation(fields: [student_id], references: [user_id])
+  role         Roles               @default(Student) @map("role")
+  is_locked    Boolean             @default(false)    //Account is locked
+  enrollments  ClassEnrollment[]
+
+  Class Class[]
+}
+
+model Teacher {
+  teacher_id      String             @id @default(auto()) @map("_id") @db.ObjectId
+  user           User                @relation(fields: [teacher_id], references: [user_id])
+  role           Roles               @default(Teacher) @map("role")
+  is_locked    Boolean               @default(false)    //Account is locked
+
+  department     String
+  courses_taught Courses[]
+}
+
+model Admin {
+  admin_id String           @id @default(auto()) @map("_id") @db.ObjectId
+  user    User              @relation(fields: [admin_id], references: [user_id])
+  role    Roles             @default(Admin) @map("role")
+}
+
+model Courses {
+  course_id       String             @id @default(auto()) @map("_id") @db.ObjectId
+  code            String             @unique
+  name            String
+  credit          Int
+
+  // Professor
+  lecturer_id     String?            @db.ObjectId
+  lecturer        Teacher?           @relation(fields: [lecturer_id], references: [teacher_id])
+
+  semester        Int
+  schedule        String?
+  description     String[]
+  Tag             String
+  maxStudents     Int
+  start_date      DateTime
+  end_date        DateTime
+
+  Class           Class[]
+}
+
+model Class{
+  classIds        String                @id @default(auto()) @map("_id") @db.ObjectId
+  course          Courses               @relation(fields: [classIds],references: [course_id])
+  prerequisites   Boolean               @default(true)
+  enrollments     ClassEnrollment[]     
+  students        String                @db.ObjectId
+  student_id      Student               @relation(fields: [students], references: [student_id])
+}
+
+model ClassEnrollment {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  class            Class    @relation(fields: [class_id], references: [classIds])
+  class_id         String    @db.ObjectId
+  
+  student_id        String   @db.ObjectId
+  student           Student? @relation(fields: [student_id], references: [student_id])
+}
