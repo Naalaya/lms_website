@@ -18,88 +18,137 @@ enum Gender {
   Female
 }
 
+// Khoa
+model Faculty {
+  faculty_id      String    @id @default(auto()) @map("_id") @db.ObjectId
+  faculty_name    String    
+  founded         DateTime  @default(now())
+  faculty_address String  
+  majors          Major[]   
+  users           User[]
+}
 
+// Ngành
+model Major {
+  major_id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  major_name      String
+  founded         DateTime          @default(now())
+  faculty_id      String            @db.ObjectId
+  faculty         Faculty           @relation(fields: [faculty_id], references: [faculty_id])
+  specializations Specialization[]
+}
+
+// Chuyên Ngành
+model Specialization {
+  specialization_id   String        @id @default(auto()) @map("_id") @db.ObjectId
+  specialization_name String
+  founded             DateTime      @default(now())
+  major_id            String        @db.ObjectId
+  major               Major         @relation(fields: [major_id], references: [major_id])
+  classes             Class[]
+  courses             Course[]
+}
+
+// Lớp của sinh viên
+model Class {
+  class_id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  class_name        String
+  specialization_id String           @db.ObjectId
+  created_at        DateTime         @default(now())
+  specialization    Specialization   @relation(fields: [specialization_id], references: [specialization_id])
+  students          Student[]
+  enrollments       Class_Enrollment[]
+}
+
+// môn học ( Khoá học)
+model Course {
+  course_id           String             @id @default(auto()) @map("_id") @db.ObjectId
+  course_name         String
+  created_at          DateTime           @default(now())
+
+  teacher_id          String             @db.ObjectId
+  lecturer            Teacher            @relation(fields: [teacher_id], references: [user_id])
+
+  prerequired         String  
+  semester            String
+
+  is_complete         Boolean            @default(true)  //đã học chưa
+  status              Boolean            @default(false) //đã được duyệt hay chưa
+  specialization_id   String            @db.ObjectId
+  specialization      Specialization     @relation(fields: [specialization_id], references: [specialization_id])
+  class_enrollments   Class_Enrollment[]
+}
+
+// lớp môn học
+model Class_Enrollment {
+  enroll_id       String           @id @default(auto()) @map("_id") @db.ObjectId 
+  class_id        String           @db.ObjectId
+  class           Class            @relation(fields: [class_id], references: [class_id])
+  course_id       String           @db.ObjectId
+  course          Course           @relation(fields: [course_id], references: [course_id])
+  student_ids     String[]          @db.ObjectId
+  students        Student[]         @relation(fields: [student_ids], references: [user_id])
+}
+
+// User
 model User {
-  // Account
-  user_id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  create_at         DateTime @default(now())
+  user_id        String       @id @default(auto()) @map("_id") @db.ObjectId 
+  user_name      String
+  image_url      String
 
-  // Information
-  user_email        String   @unique
-  phone_number      String?
-  personal_id       String   @unique // CCCD, CMT, Passport
-  userName          String   @unique
-  date_of_birth     DateTime
-  gender            Gender
-  image_url        String
-  // Role
-  role              Roles    @unique
-  Student           Student?
-  Teacher           Teacher?
-  Admin             Admin?
-}
+  gender         Gender
+  role           Roles
 
-model Student {
-  student_id   String              @id @default(auto()) @map("_id") @db.ObjectId
-  user         User                @relation(fields: [student_id], references: [user_id])
-  role         Roles               @default(Student) @map("role")
-  is_locked    Boolean             @default(false)    //Account is locked
-  enrollments  ClassEnrollment[]
+  school_email   String       @unique   
+  personal_email String
+  contact_no     String
 
-  Class Class[]
-}
+  citizen_id     String       @unique
+  ethnicity      String       @unique
+  date_of_birth  DateTime
 
-model Teacher {
-  teacher_id      String             @id @default(auto()) @map("_id") @db.ObjectId
-  user           User                @relation(fields: [teacher_id], references: [user_id])
-  role           Roles               @default(Teacher) @map("role")
-  is_locked    Boolean               @default(false)    //Account is locked
+  faculty_id     String?       @db.ObjectId
+  faculty        Faculty?      @relation(fields: [faculty_id], references: [faculty_id])
 
-  department     String
-  courses_taught Courses[]
-}
-
-model Admin {
-  admin_id String           @id @default(auto()) @map("_id") @db.ObjectId
-  user    User              @relation(fields: [admin_id], references: [user_id])
-  role    Roles             @default(Admin) @map("role")
-}
-
-model Courses {
-  course_id       String             @id @default(auto()) @map("_id") @db.ObjectId
-  code            String             @unique
-  name            String
-  credit          Int
-
-  // Professor
-  lecturer_id     String?            @db.ObjectId
-  lecturer        Teacher?           @relation(fields: [lecturer_id], references: [teacher_id])
-
-  semester        Int
-  schedule        String?
-  description     String[]
-  Tag             String
-  maxStudents     Int
-  start_date      DateTime
-  end_date        DateTime
-
-  Class           Class[]
-}
-
-model Class{
-  classIds        String                @id @default(auto()) @map("_id") @db.ObjectId
-  course          Courses               @relation(fields: [classIds],references: [course_id])
-  prerequisites   Boolean               @default(true)
-  enrollments     ClassEnrollment[]     
-  students        String                @db.ObjectId
-  student_id      Student               @relation(fields: [students], references: [student_id])
-}
-
-model ClassEnrollment {
-  id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  class            Class    @relation(fields: [class_id], references: [classIds])
-  class_id         String    @db.ObjectId
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @default(now())
   
-  student_id        String   @db.ObjectId
-  student           Student? @relation(fields: [student_id], references: [student_id])
+  account        Account?
+  teacher        Teacher?
+  student        Student?
+  admin          Admin?
+}
+
+// Teacher
+model Teacher {
+  user_id          String        @id @default(auto()) @map("_id") @db.ObjectId 
+  user             User          @relation(fields: [user_id], references: [user_id])
+  degree           String        
+  position         String        
+  courses          Course[]
+}
+
+// Student
+model Student {
+  user_id          String                @id @default(auto()) @map("_id") @db.ObjectId 
+  user             User                  @relation(fields: [user_id], references: [user_id])
+  class_id         String                @db.ObjectId
+  class            Class                 @relation(fields: [class_id], references: [class_id])
+  enrollment_ids   String[]              @db.ObjectId  
+  class_enrollments Class_Enrollment[]   @relation(fields: [enrollment_ids], references: [enroll_id])
+}
+
+// Admin
+model Admin {
+  user_id          String        @id @default(auto()) @map("_id") @db.ObjectId 
+  user             User          @relation(fields: [user_id], references: [user_id])
+}
+
+// Account
+model Account {
+  user_id       String        @id @default(auto()) @map("_id") @db.ObjectId 
+  user             User          @relation(fields: [user_id], references: [user_id])
+  account_password String
+  default_password String        
+  is_locked        Boolean       @default(false) // Account chưa bị khoá             
 }
